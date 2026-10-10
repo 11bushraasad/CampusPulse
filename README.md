@@ -19,7 +19,7 @@ CampusPulse aims to make campus life more connected by bringing society informat
 
 ## 🚀 Live Website
 
-Visit the published website: **[CampusPulse Live Demo](YOUR_LIVE_WEBSITE_URL)**
+Visit the published website: **[CampusPulse Live Demo](https://campuspulse-universi-fl3r.bolt.host)**
 
 ## 🛠️ Built With
 
