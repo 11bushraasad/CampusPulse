@@ -3,8 +3,10 @@ import { useState, useMemo } from 'react';
 import { Reveal } from '@/components/Reveal';
 import { SectionWrapper } from '@/components/SectionHeader';
 import { EventCard } from '@/components/EventCard';
-import { Button } from '@/components/Button';
-import { events, type EventStatus } from '@/data/content';
+import { LoadingState } from '@/components/States';
+import { type EventStatus } from '@/data/content';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchEventsByStatus } from '@/lib/queries';
 
 interface EventsListPageProps {
   status: EventStatus;
@@ -17,15 +19,15 @@ export function EventsListPage({ status, title, eyebrow, description }: EventsLi
   const [search, setSearch] = useState('');
   const [filterSociety, setFilterSociety] = useState('All');
 
-  const pageEvents = useMemo(() => events.filter((e) => e.status === status), [status]);
+  const { data: events, loading } = useFetch(() => fetchEventsByStatus(status), [status]);
 
   const societyNames = useMemo(() => {
-    const names = new Set(pageEvents.map((e) => e.society));
+    const names = new Set((events ?? []).map((e) => e.society));
     return ['All', ...Array.from(names).sort()];
-  }, [pageEvents]);
+  }, [events]);
 
   const filtered = useMemo(() => {
-    return pageEvents.filter((e) => {
+    return (events ?? []).filter((e) => {
       const matchesSearch =
         e.title.toLowerCase().includes(search.toLowerCase()) ||
         e.shortDescription.toLowerCase().includes(search.toLowerCase()) ||
@@ -33,7 +35,7 @@ export function EventsListPage({ status, title, eyebrow, description }: EventsLi
       const matchesSociety = filterSociety === 'All' || e.society === filterSociety;
       return matchesSearch && matchesSociety;
     });
-  }, [pageEvents, search, filterSociety]);
+  }, [events, search, filterSociety]);
 
   return (
     <div>
@@ -94,29 +96,35 @@ export function EventsListPage({ status, title, eyebrow, description }: EventsLi
 
       {/* Results */}
       <SectionWrapper className="!pt-8">
-        <div className="mb-6 text-sm text-ink-500">
-          Showing <span className="font-bold text-ink-900">{filtered.length}</span> {filtered.length === 1 ? 'event' : 'events'}
-        </div>
-
-        {filtered.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((event, i) => (
-              <Reveal key={event.id} delay={(i % 3) * 100}>
-                <EventCard event={event} />
-              </Reveal>
-            ))}
-          </div>
+        {loading ? (
+          <LoadingState />
         ) : (
-          <div className="text-center py-20">
-            <Calendar className="w-12 h-12 text-ink-200 mx-auto mb-4" />
-            <p className="text-ink-400 text-lg">No events found matching your search.</p>
-            <button
-              onClick={() => { setSearch(''); setFilterSociety('All'); }}
-              className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
-            >
-              Clear filters
-            </button>
-          </div>
+          <>
+            <div className="mb-6 text-sm text-ink-500">
+              Showing <span className="font-bold text-ink-900">{filtered.length}</span> {filtered.length === 1 ? 'event' : 'events'}
+            </div>
+
+            {filtered.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map((event, i) => (
+                  <Reveal key={event.id} delay={(i % 3) * 100}>
+                    <EventCard event={event} />
+                  </Reveal>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <Calendar className="w-12 h-12 text-ink-200 mx-auto mb-4" />
+                <p className="text-ink-400 text-lg">No events found matching your search.</p>
+                <button
+                  onClick={() => { setSearch(''); setFilterSociety('All'); }}
+                  className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </SectionWrapper>
     </div>

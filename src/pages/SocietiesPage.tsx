@@ -3,16 +3,22 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
 import { SectionWrapper } from '@/components/SectionHeader';
 import { SocietyCard } from '@/components/SocietyCard';
-import { societies, categoryColors } from '@/data/content';
+import { LoadingState } from '@/components/States';
+import { categoryColors } from '@/data/content';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchSocieties } from '@/lib/queries';
 
-const categories = ['All', ...Object.keys(categoryColors)];
+const allCategories = ['All', ...Object.keys(categoryColors)];
 
 export function SocietiesPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
+  const { data: societies, loading } = useFetch(fetchSocieties, []);
+
   const filtered = useMemo(() => {
-    return societies.filter((s) => {
+    const all = societies ?? [];
+    return all.filter((s) => {
       const matchesSearch =
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         s.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -20,7 +26,7 @@ export function SocietiesPage() {
       const matchesCategory = activeCategory === 'All' || s.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [search, activeCategory]);
+  }, [societies, search, activeCategory]);
 
   return (
     <div>
@@ -37,7 +43,7 @@ export function SocietiesPage() {
               Explore Societies
             </h1>
             <p className="text-white/60 max-w-2xl text-pretty">
-              {societies.length} societies across {Object.keys(categoryColors).length} categories. Find your passion, meet like-minded students, and make campus life unforgettable.
+              {societies?.length ?? 0} societies across {Object.keys(categoryColors).length} categories. Find your passion, meet like-minded students, and make campus life unforgettable.
             </p>
           </Reveal>
         </div>
@@ -61,7 +67,7 @@ export function SocietiesPage() {
           {/* Category filter */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <SlidersHorizontal className="w-4 h-4 text-ink-400 flex-shrink-0" />
-            {categories.map((cat) => (
+            {allCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -80,29 +86,35 @@ export function SocietiesPage() {
 
       {/* Results */}
       <SectionWrapper className="!pt-8">
-        <div className="mb-6 text-sm text-ink-500">
-          Showing <span className="font-bold text-ink-900">{filtered.length}</span> {filtered.length === 1 ? 'society' : 'societies'}
-          {activeCategory !== 'All' && <> in <span className="font-semibold text-brand-600">{activeCategory}</span></>}
-        </div>
-
-        {filtered.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((society, i) => (
-              <Reveal key={society.id} delay={(i % 4) * 80}>
-                <SocietyCard society={society} />
-              </Reveal>
-            ))}
-          </div>
+        {loading ? (
+          <LoadingState />
         ) : (
-          <div className="text-center py-20">
-            <p className="text-ink-400 text-lg">No societies found matching your search.</p>
-            <button
-              onClick={() => { setSearch(''); setActiveCategory('All'); }}
-              className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
-            >
-              Clear filters
-            </button>
-          </div>
+          <>
+            <div className="mb-6 text-sm text-ink-500">
+              Showing <span className="font-bold text-ink-900">{filtered.length}</span> {filtered.length === 1 ? 'society' : 'societies'}
+              {activeCategory !== 'All' && <> in <span className="font-semibold text-brand-600">{activeCategory}</span></>}
+            </div>
+
+            {filtered.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filtered.map((society, i) => (
+                  <Reveal key={society.id} delay={(i % 4) * 80}>
+                    <SocietyCard society={society} />
+                  </Reveal>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-ink-400 text-lg">No societies found matching your search.</p>
+                <button
+                  onClick={() => { setSearch(''); setActiveCategory('All'); }}
+                  className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </SectionWrapper>
     </div>

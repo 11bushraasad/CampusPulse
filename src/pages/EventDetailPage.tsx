@@ -4,29 +4,40 @@ import { Reveal } from '@/components/Reveal';
 import { SectionWrapper } from '@/components/SectionHeader';
 import { EventCard } from '@/components/EventCard';
 import { StatusBadge, TagBadge, CategoryBadge } from '@/components/Badge';
-import { events, societies, formatDate } from '@/data/content';
+import { LoadingState, NotFound } from '@/components/States';
+import { formatDate } from '@/data/content';
 import { useRouter } from '@/router';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchEventById, fetchSocietyById, fetchEventsBySociety } from '@/lib/queries';
 
 export function EventDetailPage({ id }: { id: string }) {
   const { navigate } = useRouter();
-  const event = events.find((e) => e.id === id);
+
+  const { data: event, loading } = useFetch(() => fetchEventById(id), [id]);
+  const { data: society } = useFetch(
+    () => event ? fetchSocietyById(event.societyId) : Promise.resolve(null),
+    [event?.societyId],
+  );
+  const { data: relatedEvents } = useFetch(
+    () => event ? fetchEventsBySociety(event.societyId) : Promise.resolve([]),
+    [event?.societyId],
+  );
+
+  if (loading) {
+    return <LoadingState />;
+  }
 
   if (!event) {
     return (
-      <SectionWrapper className="min-h-[60vh] flex items-center justify-center text-center">
-        <div>
-          <h1 className="font-display font-bold text-2xl text-ink-900 mb-3">Event Not Found</h1>
-          <p className="text-ink-500 mb-6">This event may have been removed or doesn't exist.</p>
-          <Button to={{ name: 'events-upcoming' }} icon={<ArrowLeft className="w-4 h-4" />}>Browse Events</Button>
-        </div>
-      </SectionWrapper>
+      <NotFound
+        title="Event Not Found"
+        message="This event may have been removed or doesn't exist."
+        backTo="events-upcoming"
+      />
     );
   }
 
-  const society = societies.find((s) => s.id === event.societyId);
-  const relatedEvents = events
-    .filter((e) => e.societyId === event.societyId && e.id !== event.id)
-    .slice(0, 3);
+  const related = (relatedEvents ?? []).filter((e) => e.id !== event.id).slice(0, 3);
 
   return (
     <div>
@@ -179,11 +190,11 @@ export function EventDetailPage({ id }: { id: string }) {
       </SectionWrapper>
 
       {/* Related events */}
-      {relatedEvents.length > 0 && (
+      {related.length > 0 && (
         <SectionWrapper className="bg-white border-t border-ink-100">
           <h2 className="font-display font-bold text-xl text-ink-900 mb-6">More from {event.society}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {relatedEvents.map((ev, i) => (
+            {related.map((ev, i) => (
               <Reveal key={ev.id} delay={i * 100}>
                 <EventCard event={ev} />
               </Reveal>

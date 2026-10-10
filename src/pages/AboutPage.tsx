@@ -2,7 +2,8 @@ import { Activity, Target, Eye, Heart, Users, Calendar, Building2, TrendingUp, S
 import { Reveal } from '@/components/Reveal';
 import { SectionWrapper, SectionHeader } from '@/components/SectionHeader';
 import { Button } from '@/components/Button';
-import { societies, events, announcements } from '@/data/content';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchSocieties, fetchEvents, fetchAnnouncements } from '@/lib/queries';
 
 const aboutImage = 'https://images.pexels.com/photos/8199160/pexels-photo-8199160.jpeg?auto=compress&cs=tinysrgb&h=650&w=940';
 const aboutImage2 = 'https://images.pexels.com/photos/8197508/pexels-photo-8197508.jpeg?auto=compress&cs=tinysrgb&h=650&w=940';
@@ -14,14 +15,23 @@ const values = [
   { icon: Heart, title: 'Inclusive & Accessible', description: 'Every student deserves to feel connected. Our platform is built to be welcoming and accessible to all.' },
 ];
 
-const stats = [
-  { icon: Building2, value: `${societies.length}`, label: 'Active Societies' },
-  { icon: Calendar, value: `${events.length}+`, label: 'Campus Events' },
-  { icon: Users, value: `${societies.reduce((a, s) => a + s.members, 0)}+`, label: 'Student Members' },
-  { icon: TrendingUp, value: `${announcements.length}`, label: 'Announcements' },
-];
-
 export function AboutPage() {
+  const { data: societies } = useFetch(fetchSocieties, []);
+  const { data: events } = useFetch(fetchEvents, []);
+  const { data: announcements } = useFetch(fetchAnnouncements, []);
+
+  const societyCount = societies?.length ?? 0;
+  const eventCount = events?.length ?? 0;
+  const announcementCount = announcements?.length ?? 0;
+  const memberCount = societies?.reduce((a, s) => a + s.members, 0) ?? 0;
+
+  const stats = [
+    { icon: Building2, value: `${societyCount}`, label: 'Active Societies' },
+    { icon: Calendar, value: `${eventCount}+`, label: 'Campus Events' },
+    { icon: Users, value: `${memberCount}+`, label: 'Student Members' },
+    { icon: TrendingUp, value: `${announcementCount}`, label: 'Announcements' },
+  ];
+
   return (
     <div>
       {/* Hero */}

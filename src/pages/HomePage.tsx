@@ -4,27 +4,40 @@ import { Reveal } from '@/components/Reveal';
 import { SectionHeader, SectionWrapper } from '@/components/SectionHeader';
 import { EventCard } from '@/components/EventCard';
 import { SocietyCard } from '@/components/SocietyCard';
+import { LoadingState } from '@/components/States';
 import {
-  events,
-  societies,
-  announcements,
-  importantDates,
   formatDate,
   formatDateShort,
   getDayMonth,
+  importantDates,
 } from '@/data/content';
 import { useRouter } from '@/router';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchSocieties, fetchEvents, fetchAnnouncements } from '@/lib/queries';
 
 const heroImage = 'https://images.pexels.com/photos/30052431/pexels-photo-30052431.jpeg?auto=compress&cs=tinysrgb&h=650&w=940';
 
 export function HomePage() {
   const { navigate } = useRouter();
 
-  const upcomingEvents = events.filter((e) => e.status === 'upcoming').slice(0, 6);
-  const ongoingEvents = events.filter((e) => e.status === 'ongoing');
-  const featuredSocieties = societies.slice(0, 4);
-  const urgentAnnouncements = announcements.filter((a) => a.urgent).slice(0, 2);
-  const recentAnnouncements = announcements.slice(0, 3);
+  const { data: societies, loading: loadingSocieties } = useFetch(fetchSocieties, []);
+  const { data: events, loading: loadingEvents } = useFetch(fetchEvents, []);
+  const { data: announcements, loading: loadingAnnouncements } = useFetch(fetchAnnouncements, []);
+
+  if (loadingSocieties || loadingEvents || loadingAnnouncements) {
+    return <LoadingState />;
+  }
+
+  const allSocieties = societies ?? [];
+  const allEvents = events ?? [];
+  const allAnnouncements = announcements ?? [];
+
+  const upcomingEvents = allEvents.filter((e) => e.status === 'upcoming').slice(0, 6);
+  const ongoingEvents = allEvents.filter((e) => e.status === 'ongoing');
+  const featuredSocieties = allSocieties.slice(0, 4);
+  const urgentAnnouncements = allAnnouncements.filter((a) => a.urgent).slice(0, 2);
+  const recentAnnouncements = allAnnouncements.slice(0, 3);
+  const urgentCount = allAnnouncements.filter((a) => a.urgent).length;
 
   return (
     <div>
@@ -88,17 +101,17 @@ export function HomePage() {
               <Reveal delay={400}>
                 <div className="flex items-center gap-6 mt-10 justify-center lg:justify-start">
                   <div className="text-center lg:text-left">
-                    <div className="font-display font-bold text-2xl text-white">{societies.length}</div>
+                    <div className="font-display font-bold text-2xl text-white">{allSocieties.length}</div>
                     <div className="text-xs text-white/50">Societies</div>
                   </div>
                   <div className="w-px h-10 bg-white/15" />
                   <div className="text-center lg:text-left">
-                    <div className="font-display font-bold text-2xl text-white">{events.length}+</div>
+                    <div className="font-display font-bold text-2xl text-white">{allEvents.length}+</div>
                     <div className="text-xs text-white/50">Events</div>
                   </div>
                   <div className="w-px h-10 bg-white/15" />
                   <div className="text-center lg:text-left">
-                    <div className="font-display font-bold text-2xl text-white">{societies.reduce((a, s) => a + s.members, 0)}+</div>
+                    <div className="font-display font-bold text-2xl text-white">{allSocieties.reduce((a, s) => a + s.members, 0)}+</div>
                     <div className="text-xs text-white/50">Members</div>
                   </div>
                 </div>
@@ -134,7 +147,7 @@ export function HomePage() {
                 <div className="absolute -top-4 -right-4 bg-accent-500 text-ink-900 rounded-2xl shadow-lift px-4 py-3 animate-float" style={{ animationDelay: '3s' }}>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
-                    <span className="text-xs font-bold">2 Urgent Updates</span>
+                    <span className="text-xs font-bold">{urgentCount} Urgent Update{urgentCount !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>

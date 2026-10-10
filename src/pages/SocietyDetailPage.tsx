@@ -4,26 +4,32 @@ import { Reveal } from '@/components/Reveal';
 import { SectionWrapper } from '@/components/SectionHeader';
 import { EventCard } from '@/components/EventCard';
 import { CategoryBadge } from '@/components/Badge';
-import { societies, events } from '@/data/content';
+import { LoadingState, NotFound } from '@/components/States';
 import { useRouter } from '@/router';
+import { useFetch } from '@/hooks/useFetch';
+import { fetchSocietyById, fetchEventsBySociety } from '@/lib/queries';
 
 export function SocietyDetailPage({ id }: { id: string }) {
   const { navigate } = useRouter();
-  const society = societies.find((s) => s.id === id);
+
+  const { data: society, loading } = useFetch(() => fetchSocietyById(id), [id]);
+  const { data: societyEvents } = useFetch(() => fetchEventsBySociety(id), [id]);
+
+  if (loading) {
+    return <LoadingState />;
+  }
 
   if (!society) {
     return (
-      <SectionWrapper className="min-h-[60vh] flex items-center justify-center text-center">
-        <div>
-          <h1 className="font-display font-bold text-2xl text-ink-900 mb-3">Society Not Found</h1>
-          <p className="text-ink-500 mb-6">The society you're looking for doesn't exist or may have been removed.</p>
-          <Button to={{ name: 'societies' }} icon={<ArrowLeft className="w-4 h-4" />}>Back to Societies</Button>
-        </div>
-      </SectionWrapper>
+      <NotFound
+        title="Society Not Found"
+        message="The society you're looking for doesn't exist or may have been removed."
+        backTo="societies"
+      />
     );
   }
 
-  const societyEvents = events.filter((e) => e.societyId === society.id);
+  const events = societyEvents ?? [];
 
   return (
     <div>
@@ -157,11 +163,11 @@ export function SocietyDetailPage({ id }: { id: string }) {
       </SectionWrapper>
 
       {/* Events by this society */}
-      {societyEvents.length > 0 && (
+      {events.length > 0 && (
         <SectionWrapper className="bg-white border-t border-ink-100">
           <h2 className="font-display font-bold text-xl text-ink-900 mb-6">Events by {society.name}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {societyEvents.map((event, i) => (
+            {events.map((event, i) => (
               <Reveal key={event.id} delay={i * 100}>
                 <EventCard event={event} />
               </Reveal>
